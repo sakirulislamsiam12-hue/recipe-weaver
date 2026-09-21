@@ -1,6 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  Outlet,
   Link,
   createRootRouteWithContext,
   useRouter,
@@ -9,8 +8,15 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
+import { Toaster } from "@/components/ui/sonner";
+
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { LanguageProvider } from "@/lib/i18n";
+import { AppStateProvider } from "@/lib/app-state";
+import { AppShell } from "@/components/AppShell";
+import { SplashScreen } from "@/components/SplashScreen";
+
 
 function NotFoundComponent() {
   return (
@@ -77,23 +83,34 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Smart Pantry AI" },
+      {
+        name: "description",
+        content: "AI recipes from the ingredients you already have — zero waste, in Bangla or English.",
+      },
+      { property: "og:title", content: "Smart Pantry AI" },
+      {
+        property: "og:description",
+        content: "AI recipes from the ingredients you already have — zero waste, in Bangla or English.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Baloo+2:wght@400..800&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap",
+      },
+      { rel: "icon", href: "/favicon.png", type: "image/png" },
     ],
   }),
+
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -119,8 +136,16 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <LanguageProvider>
+        <AppStateProvider>
+          {/* Launch splash sits above all app chrome and blocks interaction. */}
+          <SplashScreen />
+          {/* AppShell renders the nav chrome plus <Outlet /> for nested routes. */}
+          <AppShell />
+          <Toaster position="top-center" />
+        </AppStateProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   );
+
 }

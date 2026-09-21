@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.hide_heavily_reported_recipe() FROM PUBLIC, anon, authenticated;
