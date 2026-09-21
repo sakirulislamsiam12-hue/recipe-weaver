@@ -9,6 +9,7 @@ import { createClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/integrations/supabase/types";
 import { normalizeRecipeName } from "./recipe-library";
+import { builtinNames } from "./builtin-library";
 
 type Index = { names: string[]; set: Set<string> };
 
@@ -24,7 +25,11 @@ async function load(cuisine: string): Promise<Index> {
     { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
   );
 
-  const names: string[] = [];
+  // Start from the built-in recipes that ship inside the app, then append
+  // every imported library row: both sources are one single collection.
+  const names: string[] = [...builtinNames(cuisine)];
+  const seen = new Set(names.map(normalizeRecipeName));
+
   for (let offset = 0; ; offset += PAGE) {
     const { data, error } = await supabase
       .from("recipe_library")
@@ -33,12 +38,17 @@ async function load(cuisine: string): Promise<Index> {
       .order("name", { ascending: true })
       .range(offset, offset + PAGE - 1);
     if (error) throw new Error(error.message);
-    for (const r of data ?? []) names.push(r.name);
+    for (const r of data ?? []) {
+      const key = normalizeRecipeName(r.name);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      names.push(r.name);
+    }
     if (!data || data.length < PAGE) break;
     if (offset > 60_000) break;
   }
 
-  return { names, set: new Set(names.map(normalizeRecipeName)) };
+  return { names, set: seen };
 }
 
 export async function getRecipeIndex(cuisine = "bengali"): Promise<Index> {
