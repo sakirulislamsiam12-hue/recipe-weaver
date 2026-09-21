@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 import type { Database } from "@/integrations/supabase/types";
+import { builtinMatches, builtinRows } from "./builtin-library";
+import { normalizeRecipeName } from "./recipe-library";
 
 export type LibraryRow = {
   id: string;
@@ -88,7 +90,16 @@ export const searchRecipeLibrary = createServerFn({ method: "GET" })
           cuisine: r.cuisine,
         }));
     } else {
-      const { count, error } = await q.select("id", { count: "exact", head: true });
+      let countQuery = supabase
+        .from("recipe_library")
+        .select("id", { count: "exact", head: true })
+        .eq("cuisine", data.cuisine);
+      if (term) {
+        countQuery = countQuery.or(
+          `name.ilike.%${term}%,ingredients.ilike.%${term}%,method.ilike.%${term}%`,
+        );
+      }
+      const { count, error } = await countQuery;
       if (error) throw new Error(error.message);
       dbTotal = count ?? 0;
     }
